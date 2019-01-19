@@ -1,0 +1,25 @@
+auto mining difficulty
+hashcash
+proof of auth
+
+
+
+
+in /transact -- accept keypair & public key 
+create a senderwallet variable & load it with those values 
+
+in /create-user(new point)
+to create new user, hit new wallet() & store its values in DB to load it later.
+use _id to identify user docs & values 
+
+create a minerwallet variable & use it create a miner.
+
+whereever we are calling methods on wallet.xxx() , there we have to make user specific wallet instance via setting up db values.
+sending user-specific data is done by walletio.(transact,public-key,balance)
+
+
+/public-key is wallet's call
+
+reward = difficulty * min_reward
+
+additional attribute to transaction class for errors. exceed balance,invalid txn,invalid sign
