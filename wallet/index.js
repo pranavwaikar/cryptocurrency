@@ -6,22 +6,20 @@ const ec = new EC('secp256k1');
 
 class Wallet
 {
-	constructor()
-	{
+	constructor() {
 		this.balance= INITIAL_BALANCE;
 		this.keyPair= ChainUtil.genKeyPair();
 		this.publicKey=this.keyPair.getPublic().encode('hex');
 		this.privateKey=ChainUtil.extractPrivateKey(this.keyPair);
 	}
 
-	loadWallet (privateKey,publicKey) //save in to chain-util
-	{
+	//load object with custom user values
+	loadWallet (privateKey,publicKey) {
 		this.publicKey = publicKey;
 		this.privateKey=privateKey;
 	}
 
-	toString()
-	{
+	toString() {
 		return `wallet-
 		publicKey: ${this.publicKey.toString()}
 		keyPair: ${this.keyPair}
@@ -29,27 +27,27 @@ class Wallet
 		`;
 	}
 
-	sign(dataHash)
-	{
+	//perform digital signature on hash using private key
+	sign(dataHash) {
 		return ec.sign(dataHash,this.privateKey);
 	}
 
-	createTransaction(recipient,ammount,blockchain,transactionpool)
-	{
+	//create new transaction
+	//check if necessary balance available
+	//if transaction exists then just update else create transaction
+	//add in transaction pool
+	createTransaction(recipient,ammount,blockchain,transactionpool) {
 		this.balance = this.calculateBalance(blockchain);
-		if(ammount > this.balance)
-		{
+		if(ammount > this.balance){
 			console.log(`ammount :${ammount} exceeds the current balance :${this.balance}`);
 			return;
 		}
 		let transaction=transactionpool.existingTransaction(this.publicKey);
 
-		if(transaction)
-		{
+		if(transaction) {
 			transaction.update(this,recipient,ammount);
 		}
-		else
-		{
+		else {
 			transaction=Transaction.newTransaction(this,recipient,ammount);
 			transactionpool.updateOrAddTransaction(transaction);
 		}
@@ -57,8 +55,10 @@ class Wallet
 		return transaction;
 	}
 
-	calculateBalance(blockchain)
-	{
+	//calculate balance by performing audits on previous blockchain transactions of miner
+	//filter out all transactions of user by using his public key
+	//according to timestamps start auditing & calculate balance
+	calculateBalance(blockchain) {
 		let balance = this.balance;
 		let transactions = [];
 
@@ -71,16 +71,14 @@ class Wallet
 
 		let startTime =0;
 
-		if(walletInputTs.length > 0)
-		{
+		if(walletInputTs.length > 0) {
 			const recentInputT= walletInputTs.reduce((prev,current) => prev.input.timestamp > current.input.timestamp ? prev : current);	
 			balance = recentInputT.outputs.find(output => output.address === this.publicKey).ammount;
 			startTime = recentInputT.input.timestamp;
 		}
 
 		transactions.forEach(transaction => {
-			if(transaction.input.timestamp >startTime)
-			{
+			if(transaction.input.timestamp >startTime) {
 				transaction.outputs.find(output => {
 					if(output.address === this.publicKey)
 					{
@@ -93,8 +91,10 @@ class Wallet
 		return balance;
 	}
 
-	static calculateBalance(blockchain,publicKey)
-	{
+	//calculate balance by performing audits on previous blockchain transactions of user
+	//filter out all transactions of user by using his public key
+	//according to timestamps start auditing & calculate balance
+	static calculateBalance(blockchain,publicKey) {
 		let balance = INITIAL_BALANCE;
 		let transactions = [];
 
@@ -107,19 +107,16 @@ class Wallet
 
 		let startTime =0;
 
-		if(walletInputTs.length > 0)
-		{
+		if(walletInputTs.length > 0) {
 			const recentInputT= walletInputTs.reduce((prev,current) => prev.input.timestamp > current.input.timestamp ? prev : current);	
 			balance = recentInputT.outputs.find(output => output.address === publicKey).ammount;
 			startTime = recentInputT.input.timestamp;
 		}
 
 		transactions.forEach(transaction => {
-			if(transaction.input.timestamp >startTime)
-			{
+			if(transaction.input.timestamp >startTime) {
 				transaction.outputs.find(output => {
-					if(output.address === publicKey)
-					{
+					if(output.address === publicKey) {
 						balance += output.ammount;
 					}
 				});
@@ -129,8 +126,9 @@ class Wallet
 		return balance;
 	}
 
-	static getTransactions(blockchain,publicKey)
-	{
+	//by using public key filter out all the debit transactions from blockchain
+	//return all tranasction as JS object
+	static getTransactions(blockchain,publicKey) {
 		let transactions = [];
 		let tnxobj;
 		let txns=[];
@@ -148,12 +146,10 @@ class Wallet
 			d = new Date(transaction.input.timestamp);
 			time = d.toLocaleString();
 			transaction.outputs.find(output => {
-				if(output.address === publicKey)
-				{
+				if(output.address === publicKey) {
 					bal=output.ammount;
 				}
-				else
-				{
+				else {
 					amt=output.ammount;
 					recip=output.address;
 				}
@@ -165,8 +161,9 @@ class Wallet
 		return txns;
 	}
 
-	static getCreditedTransactions(blockchain,publicKey)
-	{
+	//by using public key filter out all the debit transactions from blockchain
+	//return all tranasction as JS object
+	static getCreditedTransactions(blockchain,publicKey) {
 		let transactions = [];
 		let tnxobj;
 		let txns=[];
@@ -179,8 +176,6 @@ class Wallet
 
 		const walletInputTs = transactions.filter(transaction => transaction.input.address !== publicKey);
 
-
-
 		walletInputTs.forEach(transaction =>{
 			id=transaction.id;
 			d = new Date(transaction.input.timestamp);
@@ -188,8 +183,7 @@ class Wallet
 			sender=transaction.input.address;
 
 			transaction.outputs.find(output => {
-				if(output.address === publicKey)
-				{
+				if(output.address === publicKey) {
 					amt=output.ammount;
 					tnxobj = {Tid:id,time:time,sender:sender,ammount:amt,status:"complete"};
 					txns.push(tnxobj);
@@ -200,8 +194,8 @@ class Wallet
 		return txns;
 	}
 
-	static blockchainWallet()
-	{
+	//static blockchain class for rewarding the miner
+	static blockchainWallet() {
 		var blockchainWallet = new this();
 		blockchainWallet.address= 'blockchain-wallet';
 		return blockchainWallet;

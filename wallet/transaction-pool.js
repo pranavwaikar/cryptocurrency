@@ -2,46 +2,44 @@ const Transaction = require('./transaction');
 
 class TransactionPool
 {
-	constructor()
-	{
+	constructor() {
 		this.transactions = [];
 	}
 
-	updateOrAddTransaction(transaction)
-	{
+	//if same transaction id is available in pool then update that transaction
+	//otherwise create new transaction in pool
+	updateOrAddTransaction(transaction) {
 		let transactionWithID = this.transactions.find(t => t.id === transaction.id);
 		
-		if (transactionWithID) 
-		{
+		if (transactionWithID) {
 			this.transactions[this.transactions.indexOf(transactionWithID)] = transaction;
 		}
-		else
-		{
+		else {
 			this.transactions.push(transaction);
 		}
 
 	}
 
-	existingTransaction(address)
-	{
+	//find whether transaction exists in pool
+	existingTransaction(address) {
 		return this.transactions.find(t => t.input.address === address);
 	}
 
-	validTransactions()
-	{
+	//check whether the transaction input & outputs match each other.
+	//if ok then verify transaction by checking signatures
+	//return the resultant transaction details 
+	validTransactions() {
 		return this.transactions.filter(transaction => {
 			const outputTotal = transaction.outputs.reduce((total,output) => {
 				return total + output.ammount;
 			},0);
 			
-			if(transaction.input.ammount !== outputTotal)
-			{
+			if(transaction.input.ammount !== outputTotal) {
 				console.log(`invalid transaction from ${transaction.input.address}`);
 				return;
 			}
 
-			if(!Transaction.verifyTransaction(transaction))
-			{
+			if(!Transaction.verifyTransaction(transaction)) {
 				console.log(`invalid signature from ${transaction.input.address}`);
 				return;
 			}
@@ -51,13 +49,15 @@ class TransactionPool
 		});
 	}
 
-	clear()
-	{
+	clear() {
 		this.transactions = [];
 	}
 
-	static getTransactions(tp,publicKey)
-	{
+	//returns all debit transaction as JS object
+	//filters the user transaction which are launched by specified user
+	//extract balance, recipient,amt ,etc
+	//return such details
+	static getTransactions(tp,publicKey) {
 		let transactionx = [];
 		let tnxobj;
 		let txns=[];
@@ -75,12 +75,10 @@ class TransactionPool
 			d = new Date(transaction.input.timestamp);
 			time = d.toLocaleString();
 			transaction.outputs.find(output => {
-				if(output.address === publicKey)
-				{
+				if(output.address === publicKey){
 					bal=output.ammount;
 				}
-				else
-				{
+				else {
 					amt=output.ammount;
 					recip=output.address;
 				}
@@ -92,8 +90,11 @@ class TransactionPool
 		return txns;
 	}
 
-		static getCreditedTransactions(tp,publicKey)
-	{
+		//returns all credited transaction as JS object
+		//filters the user transaction which are not launched by specified user
+		//look whether in any transaction user apperars as recipient
+		//return such details
+		static getCreditedTransactions(tp,publicKey) {
 		let transactions = [];
 		let tnxobj;
 		let txns=[];
@@ -115,8 +116,7 @@ class TransactionPool
 			console.log('outputs--',transaction.outputs[1]);
 
 			transaction.outputs.find(output => {
-				if(output.address === publicKey)
-				{
+				if(output.address === publicKey) {
 					amt=output.ammount;
 					tnxobj = {Tid:id,time:time,sender:sender,ammount:amt,status:"pending"};
 					txns.push(tnxobj);

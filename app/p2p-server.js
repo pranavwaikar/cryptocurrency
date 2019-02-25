@@ -6,23 +6,21 @@ const MESSAGE_TYPES = {chain:'CHAIN',transaction:'TRANSACTION',clear_transaction
 
 class P2pServer 
 {
-	constructor(blockchain,transactionPool)
-	{
+	constructor(blockchain,transactionPool) {
 		this.blockchain=blockchain;
 		this.transactionPool=transactionPool;
 		this.sockets=[];
 	}
 
-	listen()
-	{
+	//listen for peer to peer network nodes
+	listen() {
 		const server = new Websocket.Server({port: P2P_PORT});
 		server.on('connection',socket => this.connectSocket(socket));
 		this.connectToPeers();
 		console.log(`Listening to peer to peer connections on: ${P2P_PORT}`);
 	}
 
-	connectSocket(socket)
-	{
+	connectSocket(socket) {
 		this.sockets.push(socket);
 		console.log('Socket connected');
 		this.messageHandler(socket);
@@ -30,8 +28,8 @@ class P2pServer
 		this.sendChain(socket);
 	}
 
-	connectToPeers()
-	{
+	//connect to all the peers defined as command line arguments
+	connectToPeers() {
 		peers.forEach(peer => {
 			//ws://localhost:5001
 			const socket=new Websocket(peer);
@@ -41,24 +39,26 @@ class P2pServer
 		
 	}
 
-	sendChain(socket)
-	{
+	//send current chain to all peers 
+	sendChain(socket) {
 		socket.send(JSON.stringify({type:MESSAGE_TYPES.chain,chain:this.blockchain.chain}));
 	}
 
-	sendTransaction(socket,transaction)
-	{
+	//send transaction to all peers
+	sendTransaction(socket,transaction) {
 		socket.send(JSON.stringify({type:MESSAGE_TYPES.transaction,transaction}));
 	}
 
-	messageHandler(socket)
-	{
+	//handling different messages from peers
+	//if chain: then validate & replace
+	//if transaction: then add transaction in out transaction pool
+	//if clear: then transaction is mined so clear form all transaction pools
+	messageHandler(socket) {
 		socket.on('message',message => {
 			const data=JSON.parse(message);
 			console.log('data',data);
 
-			switch(data.type)
-			{
+			switch(data.type) {
 				case MESSAGE_TYPES.chain:
 					this.blockchain.replaceChain(data.chain);
 					break;
@@ -73,19 +73,19 @@ class P2pServer
 		});
 	}
 
-	syncChains()
-	{
+
+	//broadcast blockchain
+	syncChains() {
 		this.sockets.forEach(socket => this.sendChain(socket));
 	}
 
-	
-	broadcastTransaction(transaction)
-	{
+	//broadcast transaction blockchain
+	broadcastTransaction(transaction) {
 		this.sockets.forEach(socket => this.sendTransaction(socket,transaction));
 	}
 
-	broadcastClearTransactions()
-	{
+	//broadcast mined transaction clearnace to all peers
+	broadcastClearTransactions() {
 		this.sockets.forEach(socket => socket.send(JSON.stringify({
 			type:MESSAGE_TYPES.clear_transactions
 		})));

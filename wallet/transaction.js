@@ -3,20 +3,17 @@ const { MINING_REWARD } = require('../config');
 
 class Transaction
 {
-	constructor()
-	{
+	constructor() {
 		this.id=ChainUtil.id();
 		this.input=null;
 		this.outputs = [];
 		this.errors;
 	}
 
-
-	update(senderWallet,recipient,ammount)
-	{
+	//updates the transactions if repeated
+	update(senderWallet,recipient,ammount) {
 		const senderOutput = this.outputs.find(output => output.address === senderWallet.publicKey);
-		if(ammount > senderOutput.ammount)
-		{
+		if(ammount > senderOutput.ammount) {
 			console.log(`Ammount: ${ammount} exceeds balance`);
 			return;
 		}
@@ -28,18 +25,18 @@ class Transaction
 		return this;
 	}
 
-	static transactionWithOutputs(senderWallet,outputs)
-	{
+	//the outputs are the transaction data
+	//push outputs as transaction attribute
+	static transactionWithOutputs(senderWallet,outputs) {
 		const transaction = new this();
 		transaction.outputs.push(...outputs);
 		Transaction.signTransaction(transaction,senderWallet);
 		return transaction;
 	}
 
-	static newTransaction(senderWallet, recipient,ammount)
-	{
-		if(ammount > senderWallet.balance)
-		{
+	//create new transaction data & output attributes for it
+	static newTransaction(senderWallet, recipient,ammount) {
+		if(ammount > senderWallet.balance) {
 			console.log(`Ammount : ${ammount} exceeds balance`);
 			return;
 		}
@@ -50,8 +47,9 @@ class Transaction
 		]);
 	}
 
-	static rewardTransaction(minerWallet,blockchainWallet,bc)
-	{
+	//calculate reward ammount & generate reward transaction details
+	// add that data in the block as well
+	static rewardTransaction(minerWallet,blockchainWallet,bc) {
 		const lastblock=bc.chain[bc.chain.length - 1];
 		let {difficulty} = lastblock;
 		var reward = difficulty * MINING_REWARD;
@@ -60,8 +58,8 @@ class Transaction
 		}]);
 	}
 
-	static signTransaction(tranasction,senderWallet)
-	{
+	//generate digital signature & add it as transaction input 
+	static signTransaction(tranasction,senderWallet) {
 		tranasction.input = {
 			timestamp : Date.now(),
 			ammount : senderWallet.balance,
@@ -70,8 +68,8 @@ class Transaction
 		}
 	}
 
-	static verifyTransaction(tranasction)
-	{
+	//verify transaction by analyzing digital signature
+	static verifyTransaction(tranasction) {
 		return ChainUtil.verifySignature(tranasction.input.address,tranasction.input.signature,ChainUtil.hash(tranasction.outputs));
 	}
 }

@@ -1,10 +1,11 @@
 const ChainUtil = require('../chain-util');
 const {DIFFICULTY,MINE_RATE} = require('../config');
 
+
+//represents a block in blockchain
 class Block
 {
-	constructor(timestamp,lasthash,hash,data,nonce,difficulty)
-	{
+	constructor(timestamp,lasthash,hash,data,nonce,difficulty) {
 		this.timestamp=timestamp;
 		this.lasthash=lasthash;
 		this.hash=hash;
@@ -13,8 +14,7 @@ class Block
 		this.difficulty=difficulty || DIFFICULTY;
 	}
 
-	toString()
-	{
+	toString() {
 		return `Block:
 		Timestamp: ${this.timestamp}
 		Lasthash: ${this.lasthash.substring(0,10)}
@@ -25,13 +25,14 @@ class Block
 		`;
 	}
 
-	static genesis()
-	{
+	//the first block in the chain is hand-made. 
+	static genesis() {
 		return new this('genesis time','--------','First-hash-p97',[],0,DIFFICULTY);
 	}
 
-	static mineBlock(lastBlock,data)
-	{
+	//here we are defining POW consensus protocol 
+	//adds new block upon success
+	static mineBlock(lastBlock,data) {
 		let hash,timestamp;
 		let {difficulty} = lastBlock;
 		const lastHash= lastBlock.hash;
@@ -48,19 +49,20 @@ class Block
 		return new this(timestamp,lastHash,hash,data,nonce,difficulty);
 	}
 
-	static hash(timestamp,lasthash,data,nonce,difficulty)
-	{
+	//generates SHA256 hash using the transaction input fields
+	static hash(timestamp,lasthash,data,nonce,difficulty) {
 		return ChainUtil.hash(`${timestamp}${lasthash}${data}${nonce}${difficulty}`).toString();
 	}
 
-	static blockHash(block)
-	{
+	//calculates SHA256 hash of given block
+	static blockHash(block) {
 		const {timestamp,lasthash,data,nonce,difficulty} = block;
 		return Block.hash(timestamp,lasthash,data,nonce,difficulty);
 	}
 
-	static adjustDifficulty(lastBlock,currentTime)
-	{
+	//dynamic difficulty mining algo
+	//depending on minirg rate change difficulty os system
+	static adjustDifficulty(lastBlock,currentTime) {
 		let {difficulty} = lastBlock;
 		difficulty = lastBlock.timestamp + MINE_RATE > currentTime ? difficulty+1 : difficulty -1;
 
